@@ -35,7 +35,14 @@ sed -i '/swap/d' /etc/fstab
 setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
-# Step 10: Create a YUM repository configuration file for Kubernetes
+# Step 10: Enable IP Forwarding temporarily
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+# Step 11: Make IP Forwarding permanent
+echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+sysctl -p
+
+# Step 12: Create a YUM repository configuration file for Kubernetes
 cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
@@ -46,8 +53,15 @@ gpgkey=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/repodata/repomd.xml.key
 exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
 EOF
 
-# Step 11: Install Kubernetes components kubelet, kubeadm, kubectl
+# Step 13: Install Kubernetes components kubelet, kubeadm, kubectl
 yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
 
-# Step 12: Start kubelet service automatically
+# Step 14: Start kubelet service automatically
 systemctl enable --now kubelet
+
+# .bashrc 파일에 자동 완성 및 별칭 설정 추가
+echo 'source <(kubectl completion bash)' >> ~/.bashrc
+echo 'alias k=kubectl' >> ~/.bashrc
+echo 'complete -o default -F __start_kubectl k' >> ~/.bashrc
+
+source ~/.bashrc
